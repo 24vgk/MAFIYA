@@ -35,14 +35,14 @@ async def main() -> None:
 
     # Инициализируем бот и диспетчер
     bot: Bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
-    storage = RedisStorage.from_url('redis://localhost:6379/0', key_builder=DefaultKeyBuilder(with_destiny=True))
+    storage = RedisStorage.from_url('redis://localhost:6379/3', key_builder=DefaultKeyBuilder(with_destiny=True))
     dp: Dispatcher = Dispatcher(storage=storage)
     jobstores = {
-        'default': RedisJobStore(
-            jobs_key='dispatched_trips_jobs',
-            run_times_key='dispatched_trips_running',
+        'mafiya': RedisJobStore(
+            jobs_key='mafiya_jobs',
+            run_times_key='mafiya_trips_running',
             host='localhost',
-            db=2,
+            db=3,
             port=6379
         )
     }

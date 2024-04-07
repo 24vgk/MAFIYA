@@ -15,5 +15,5 @@ class SchedulerMiddleware(BaseMiddleware):
             event: TelegramObject,
             data: Dict[str, Any]
     ) -> Any:
-        data['apscheduler'] = self.scheduler
+        data['mafiya'] = self.scheduler
         return await handler(event, data)
