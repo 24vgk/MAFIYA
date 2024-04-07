@@ -17,12 +17,12 @@ def pay(val: str, des: str):
         },
         "confirmation": {
             "type": "redirect",
-            "return_url": "https://t.me/eazy_way_bot"
+            "return_url": "https://t.me/mafiya_zov_bot"
         },
         "capture": True,
         "receipt": {
             "customer": {
-                "phone": "79222226354"
+                "phone": "79939133738"
             },
             "items": [
                 {

@@ -4,7 +4,7 @@ from lexicon import lexicon_other
 
 
 # Функция генератор универсальный
-def generate_all(width: int, *args: str, **kwargs: str) -> InlineKeyboardMarkup:
+def generate_all(width: int, last_btn: str | None = None, *args: str, **kwargs: str) -> InlineKeyboardMarkup:
     # Инициализация билдера
     kb_builder: InlineKeyboardBuilder = InlineKeyboardBuilder()
     # Инициализация списка кнопок
@@ -18,7 +18,10 @@ def generate_all(width: int, *args: str, **kwargs: str) -> InlineKeyboardMarkup:
                 callback_data=button))
     if kwargs:
         for button, text in kwargs.items():
-            buttons.append(InlineKeyboardButton(text=text, callback_data=button))
+            if button == "pay":
+                buttons.append(InlineKeyboardButton(text=text, url=last_btn))
+            else:
+                buttons.append(InlineKeyboardButton(text=text, callback_data=button))
 
     kb_builder.row(*buttons, width=width)
     return kb_builder.as_markup()

@@ -28,4 +28,21 @@ class Users_profile(Base):
     antivirus: Mapped[int] = mapped_column(default=0)
     active_role: Mapped[int] = mapped_column(default=0)
     bullet: Mapped[int] = mapped_column(default=0)
+    on_off: Mapped[bool] = mapped_column(default=True)
 
+
+# class SumConstant(Base):
+#     __tablename__ = 'Sum_constant'
+#
+#     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, unique=True)
+#     sum_gold: Mapped[int] = mapped_column(default=100)
+#     count_stones: Mapped[int] = mapped_column(default=1)
+#     stones1: Mapped[int] = mapped_column(default=40)
+#     stones2: Mapped[int] = mapped_column(default=80)
+#     stones5: Mapped[int] = mapped_column(default=180)
+#     stones10: Mapped[int] = mapped_column(default=300)
+#     sum_protection: Mapped[int] = mapped_column(default=100)
+#     sum_documents: Mapped[int] = mapped_column(default=150)
+#     sum_antivirus: Mapped[int] = mapped_column(default=150)
+#     sum_active_role: Mapped[int] = mapped_column(default=1)
+#     sum_bullet: Mapped[int] = mapped_column(default=1)
