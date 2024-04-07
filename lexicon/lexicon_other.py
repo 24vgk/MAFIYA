@@ -18,13 +18,13 @@ LEXICON_START_TEXT: dict[str, str] = {
 }
 
 LEXICON_PROFILE: dict[str: str] = {
-    "info_user": "💰 Золото: {gold}"
-                 "💎 Камни: {stones}"
-                 "🛡 Защита: {protection}"
-                 "📂 Документы: {documents}"
-                 "📀 Антивирус: {antivirus}"
-                 "🎎 Активная роль: {active_role}"
-                 "☠ Бронебойная пуля: {bullet}"
+    "info_user": "💰 Золото: {gold}\n"
+                 "💎 Камни: {stones}\n"
+                 "🛡 Защита: {protection}\n"
+                 "📂 Документы: {documents}\n"
+                 "📀 Антивирус: {antivirus}\n"
+                 "🎎 Активная роль: {active_role}\n"
+                 "☠ Бронебойная пуля: {bullet}\n\n"
                  "⚠ Настройка использования предметов не применяется во время игры! "
                  "Предметы купленные во время игры не работают!"
 }

@@ -2,6 +2,8 @@ import asyncio
 import logging
 import logging.config
 from datetime import datetime
+
+from config_bd.engine import create_db, session_maker
 from logging_data.logging_settings import logging_config
 from aiogram import Bot, Dispatcher
 from aiogram_dialog import setup_dialogs
@@ -15,6 +17,8 @@ from apscheduler_di import ContextSchedulerDecorator
 from middlewares.apscheduler_m import SchedulerMiddleware
 
 # Инициализируем логгер
+from middlewares.db import DataBaseSession
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,11 +59,12 @@ async def main() -> None:
         pass
     scheduler.add_job(sheduler_distribution.random, id='random', trigger='cron', hour=00,
                       minute=1, start_date=datetime.now())
+    await create_db()
 
     # Регистриуем роутеры в диспетчере
+    dp.update.middleware(DataBaseSession(session_pool=session_maker))
     dp.update.middleware.register(SchedulerMiddleware(scheduler))
     dp.include_router(other_handlers.router)
-    # dp.include_router(other_handlers.router)
     setup_dialogs(dp)
 
     # Пропускаем накопившиеся апдейты и запускаем polling
