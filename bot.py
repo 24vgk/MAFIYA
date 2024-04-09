@@ -8,7 +8,7 @@ from logging_data.logging_settings import logging_config
 from aiogram import Bot, Dispatcher
 from aiogram_dialog import setup_dialogs
 from config_data.config import Config, load_config
-from handlers import other_handlers, sheduler_distribution
+from handlers import other_handlers, sheduler_distribution, game_handlers
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from keyboards.set_menu import set_main_menu
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
@@ -64,6 +64,7 @@ async def main() -> None:
     # Регистриуем роутеры в диспетчере
     dp.update.middleware(DataBaseSession(session_pool=session_maker))
     dp.update.middleware.register(SchedulerMiddleware(scheduler))
+    dp.include_router(game_handlers.router)
     dp.include_router(other_handlers.router)
     setup_dialogs(dp)
 

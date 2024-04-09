@@ -24,6 +24,7 @@ start_keyboard = keyboard.generate_all(2, **lx.LEXICON_START)
 profile_keyboard_on = keyboard.generate_all(1, **lx.LEXICON_PROFILE_BUTTON_ON)
 profile_keyboard_off = keyboard.generate_all(1, **lx.LEXICON_PROFILE_BUTTON_OFF)
 shop_keyboard = keyboard.generate_all(2, **lx.LEXICON_SHOP_BUTTON)
+info_keyboard = keyboard.generate_all(1, **lx.LEXICON_ROLE_INFO_BUTTON)
 
 
 # Стартовый
@@ -56,6 +57,11 @@ async def back_start(callback: CallbackQuery):
             user_name=callback.message.from_user.first_name
         ), reply_markup=start_keyboard
     )
+
+
+@router.callback_query(F.data == "info")
+async def back_start(callback: CallbackQuery):
+    await callback.message.edit_text(text=lx.LEXICON_ROLE_INFO["role_info"], reply_markup=info_keyboard)
 
 
 @router.callback_query(F.data == "back_shop")
@@ -364,5 +370,5 @@ async def com_help(message: Message):
 # Этот хэндлер удаляет сообщения которые не обрабатываются
 @router.message()
 async def delete_warning_message(message: Message):
-    print(message.text)
+    print(message.chat.id)
     await message.delete()
