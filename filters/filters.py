@@ -6,7 +6,6 @@ config: Config = load_config()
 
 
 class IsOwner(BaseFilter):
-
     async def __call__(self, message: Message) -> bool:
         admin_ids = config.tg_bot.admin_ids
         return message.from_user.id in admin_ids
