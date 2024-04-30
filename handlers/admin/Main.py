@@ -26,6 +26,11 @@ main_menu_dialog = Dialog(
                 id="service_scripts",
                 state=states.ServiceScripts.MAIN,
             ),
+            Start(
+                Const("Логи"),
+                id="get_logs",
+                state=states.GetLogs.MAIN,
+            ),
             width=2,
         ),
         state=states.Main_menu.MAIN,

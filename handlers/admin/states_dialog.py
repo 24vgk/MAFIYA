@@ -20,3 +20,7 @@ class SendMessages(StatesGroup):
 
 class ServiceScripts(StatesGroup):
     MAIN = State()
+
+
+class GetLogs(StatesGroup):
+    MAIN = State()
