@@ -9,6 +9,7 @@ from handlers.admin import states_dialog as states
 from handlers.admin.common import MAIN_MENU_BUTTON
 
 
+# Диалог главного меню Админа
 main_menu_dialog = Dialog(
     Window(
         Const("Меню Владельца"),

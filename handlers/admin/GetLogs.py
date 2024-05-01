@@ -14,7 +14,7 @@ from handlers.admin.common import MAIN_MENU_BUTTON
 
 
 
-
+# Хэндлер по выводу логов ошибок (ERROR, CRITICAL)
 async def error(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     if callback.from_user.id == 474528766 or callback.from_user.id == 725455605:
         file_name = f"ERROR.txt"
@@ -24,7 +24,7 @@ async def error(callback: CallbackQuery, button: Button, dialog_manager: DialogM
         await callback.answer('Доступ запрещён')
 
 
-
+# Окно выбора типа логов
 get_logs_window = Window(Const("Выберите типы ошибок которые нужно вывести"),
                          Button(Const("Получить ошибки"), id="get_error", on_click=error),
                          MAIN_MENU_BUTTON,
