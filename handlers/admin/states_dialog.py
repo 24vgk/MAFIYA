@@ -10,11 +10,15 @@ class WorkingClients(StatesGroup):
     MAIN = State()
     CORRECT_ID = State()
     # Изменение баланса
-    NEW_BALANCE = State()
-    INPUT_NEW_VALUE = State()
-    SEND_UPDATE_VALUE = State()
-    HISTORY = State()
+    BALANCE = State()
+    INPUT_NEW_BALANCE = State()
+    CONFIRM_NEW_BALANCE = State()
+    SEND_UPDATE_BALANCE = State()
+    # Начислить бонус
+    BONUS = State()
     INPUT_BONUS = State()
+    CONFIRM_ADD_BONUS = State()
+    HISTORY = State()
     # Удалить клиента
     DELETE_USER = State()
     DELETING = State()
