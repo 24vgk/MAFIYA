@@ -73,7 +73,7 @@ async def select_currency(
 
 
 # Хэндлер, который сработает после ввода нового значения ДОПИСАТЬ ЗАПИСЬ В ИСТОРИЮ ТРАНЗАКЦИЙ!!!!!!
-async def correct_new_value(
+async def correct_new_balance(
     message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
 ):
     tg_id = dialog_manager.dialog_data["tg_id"]
@@ -99,11 +99,28 @@ async def correct_new_value(
 
 
 # Хэндлер, который сработает, если введено не число при вводе не числа
-async def uncorrect_new_value(
+async def uncorrect_new_balance(
     message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
 ):
     await message.answer("Введено не число. Повторите ввод.")
     await dialog_manager.switch_to(states.WorkingClients.INPUT_NEW_VALUE)
+
+
+# Хэндлер который отправит сообщение юзеру при изменении баланса
+async def send_balance_user(
+    callback: CallbackQuery, button: Button, dialog_manager: DialogManager
+):
+    tg_id = dialog_manager.dialog_data["tg_id"]
+    amount = dialog_manager.dialog_data["amount"]
+    output_currency = dialog_manager.dialog_data["output_currency"]
+    # высылаем сообщение пользователю
+    await callback.bot.send_message(
+        chat_id=tg_id,
+        text="Ваш баланс внутриигровой валюты {output_currency} изменен технической поддержкой ✅\n\n"
+        f"Текущий баланс {output_currency}: {amount}",
+        # reply_markup=inline.distribution_admin, КНОПКА В ЛИЧНЫЙ КАБИНЕТ
+    )
+    await dialog_manager.switch_to(states.WorkingClients.CORRECT_ID)
 
 
 # Хэндлер который сработает при нажатии Удалить в Удалить клиента
@@ -265,8 +282,8 @@ input_new_value_window = Window(
     TextInput(
         id="new_value_input",
         type_factory=check_digit,
-        on_success=correct_new_value,
-        on_error=uncorrect_new_value,
+        on_success=correct_new_balance,
+        on_error=uncorrect_new_balance,
     ),
     getter=select_currency_getter,
     state=states.WorkingClients.INPUT_NEW_VALUE,
@@ -277,8 +294,14 @@ input_new_value_window = Window(
 send_update_value_window = Window(
     Format(
         text="Баланс внутриигровой валюты {output_currency} для клиента с id {tg_id} изменен на {amount}\n\n"
+        "Выслать уведомление клиенту?"
     ),
-    BACK_TO_INFO_CLIENT_BUTTON,
+    Group(
+        SwitchTo(
+            text=Const("Нет"), id="no_send_balance_user", state=states.WorkingClients.CORRECT_ID
+        ),
+        Button(text=Const("Да"), id="send_balance_user", on_click=send_balance_user),
+    ),
     getter=send_update_value_getter,
     state=states.WorkingClients.SEND_UPDATE_VALUE,
 )
