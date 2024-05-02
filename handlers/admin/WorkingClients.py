@@ -8,7 +8,19 @@ from aiogram_dialog.widgets.text import Const, Format, List, Multi
 
 from handlers.admin import states_dialog as states
 from handlers.admin.common import MAIN_MENU_BUTTON, BACK_TO_INFO_CLIENT_BUTTON
-from config_bd.Users import orm_select_user_profile
+from config_bd.Users import (
+    orm_add_user,
+    orm_select_user_profile,
+    orm_add_user_profile,
+    orm_update_user_profile_on_off,
+    orm_update_user_profile_stones,
+    orm_update_user_profile_gold,
+    orm_update_user_profile_protection,
+    orm_update_user_profile_antivirus,
+    orm_update_user_profile_documents,
+    orm_update_user_profile_active_role,
+    orm_update_user_profile_bullet,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -60,13 +72,29 @@ async def select_currency(
     await dialog_manager.switch_to(states.WorkingClients.INPUT_NEW_VALUE)
 
 
-# Хэндлер, который сработает после ввода нового значения
+# Хэндлер, который сработает после ввода нового значения ДОПИСАТЬ ЗАПИСЬ В ИСТОРИЮ ТРАНЗАКЦИЙ!!!!!!
 async def correct_new_value(
     message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
 ):
     tg_id = dialog_manager.dialog_data["tg_id"]
+    currency = dialog_manager.dialog_data["currency"]
     session = dialog_manager.middleware_data["session"]
     new_value = int(text)
+    dialog_manager.dialog_data.update({"amount": new_value})
+    if currency == "gold":
+        await orm_update_user_profile_gold(session, tg_id, new_value)
+    elif currency == "stones":
+        await orm_update_user_profile_stones(session, tg_id, new_value)
+    elif currency == "protection":
+        await orm_update_user_profile_protection(session, tg_id, new_value)
+    elif currency == "documents":
+        await orm_update_user_profile_documents(session, tg_id, new_value)
+    elif currency == "antivirus":
+        await orm_update_user_profile_antivirus(session, tg_id, new_value)
+    elif currency == "active_role":
+        await orm_update_user_profile_active_role(session, tg_id, new_value)
+    elif currency == "bullet":
+        await orm_update_user_profile_bullet(session, tg_id, new_value)
     await dialog_manager.switch_to(states.WorkingClients.SEND_UPDATE_VALUE)
 
 
@@ -138,7 +166,13 @@ async def select_currency_getter(dialog_manager: DialogManager, **kwargs):
         output_currency = "🎎 Активная роль"
     elif currency == "bullet":
         output_currency = "☠ Бронебойная пуля"
+    dialog_manager.dialog_data.update({"output_currency": output_currency})
     return {"output_currency": output_currency}
+
+
+# Геттер передачи в окно сообщения о изменении баланса
+async def send_update_value_getter(dialog_manager: DialogManager, **kwargs):
+    return dialog_manager.dialog_data
 
 
 # Геттер для передачи данных о пользователе в окно удаления
@@ -208,7 +242,7 @@ correct_id_window = Window(
 
 # Окно изменить баланс
 new_balance_window = Window(
-    Const("Выберите что бы вы хотели изменить"),
+    Const("Выберите внутриигровую валюту которую вы хотите изменить"),
     Group(
         Select(
             Format("{item[0]}"),
@@ -227,7 +261,7 @@ new_balance_window = Window(
 
 # Окно ввода нового значения
 input_new_value_window = Window(
-    Format(text="Введите новое значение {output_currency}:"),
+    Format(text="Введите новое значение внутриигровой валюты {output_currency}:"),
     TextInput(
         id="new_value_input",
         type_factory=check_digit,
@@ -235,7 +269,18 @@ input_new_value_window = Window(
         on_error=uncorrect_new_value,
     ),
     getter=select_currency_getter,
-    state=states.WorkingClients.INPUT_NEW_VALUE
+    state=states.WorkingClients.INPUT_NEW_VALUE,
+)
+
+
+# Окно вывода сообщения о изменении баланса
+send_update_value_window = Window(
+    Format(
+        text="Баланс внутриигровой валюты {output_currency} для клиента с id {tg_id} изменен на {amount}\n\n"
+    ),
+    BACK_TO_INFO_CLIENT_BUTTON,
+    getter=send_update_value_getter,
+    state=states.WorkingClients.SEND_UPDATE_VALUE,
 )
 
 
@@ -266,6 +311,7 @@ working_clients_dialog = Dialog(
     correct_id_window,
     new_balance_window,
     input_new_value_window,
+    send_update_value_window,
     delete_user_window,
     deleting_user_window,
 )
