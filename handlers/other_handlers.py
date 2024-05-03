@@ -43,7 +43,8 @@ async def start(message: Message, session: AsyncSession):
                 user_name=message.from_user.first_name
             ), reply_markup=start_keyboard
         )
-    except IntegrityError:
+    except IntegrityError as e:
+        print(str(e))
         await message.answer(
             f'С возвращением {message.from_user.first_name}',
             reply_markup=start_keyboard
@@ -367,8 +368,15 @@ async def com_help(message: Message):
     await message.answer(text=str(message.from_user.id))
 
 
+# @router.callback_query(F.data == 'start_reg')
+# async def com_help(callback: CallbackQuery):
+#     print(callback)
+#     print(callback)
+
+
 # Этот хэндлер удаляет сообщения которые не обрабатываются
 @router.message()
 async def delete_warning_message(message: Message):
     print(message.chat.id)
     await message.delete()
+    await message.answer(text='вы зарегистрировали игру')
