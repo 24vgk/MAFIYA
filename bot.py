@@ -3,18 +3,22 @@ import logging
 import logging.config
 from datetime import datetime
 
-from config_bd.engine import create_db, session_maker
-from logging_data.logging_settings import logging_config
 from aiogram import Bot, Dispatcher
-from aiogram_dialog import setup_dialogs
-from config_data.config import Config, load_config
-from handlers import other_handlers, sheduler_distribution, game_handlers
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from keyboards.set_menu import set_main_menu
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler_di import ContextSchedulerDecorator
 from middlewares.apscheduler_m import SchedulerMiddleware
+
+from config_bd.engine import create_db, session_maker
+from keyboards.set_menu import set_main_menu
+from logging_data.logging_settings import logging_config
+from aiogram_dialog import setup_dialogs
+from config_data.config import Config, load_config
+from handlers import admin_handlers, other_handlers, sheduler_distribution, game_handlers
+from handlers.admin.Main import main_menu_dialog
+from handlers.admin.WorkingClients import working_clients_dialog
+from handlers.admin.GetLogs import get_logs_dialog
 
 # Инициализируем логгер
 from middlewares.db import DataBaseSession
@@ -64,6 +68,10 @@ async def main() -> None:
     # Регистриуем роутеры в диспетчере
     dp.update.middleware(DataBaseSession(session_pool=session_maker))
     dp.update.middleware.register(SchedulerMiddleware(scheduler))
+    dp.include_router(admin_handlers.router)
+    dp.include_router(main_menu_dialog)
+    dp.include_router(working_clients_dialog)
+    dp.include_router(get_logs_dialog)
     dp.include_router(game_handlers.router)
     dp.include_router(other_handlers.router)
     setup_dialogs(dp)
