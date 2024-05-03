@@ -1,6 +1,9 @@
+import logging
+import os
+
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram_dialog import Dialog, Window, DialogManager, StartMode
 from aiogram_dialog.widgets.input import ManagedTextInput, TextInput
 from aiogram_dialog.widgets.kbd import Start, SwitchTo, Cancel, Group, Button, Select
@@ -43,9 +46,11 @@ async def correct_id(
     message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
 ):
     session: AsyncSession = dialog_manager.middleware_data["session"]
-    user_db = await orm_select_user_profile(session, text)
+    user_profile_db = await orm_select_user_profile(
+        session, text
+    )  # заменить на базу юзера
     # если пользователь есть в базе переводи в след сосотояние
-    if user_db is not None:
+    if user_profile_db is not None:
         dialog_manager.dialog_data.update({"tg_id": text})
         await dialog_manager.switch_to(states.WorkingClients.CORRECT_ID)
     # если пользоваетля нет в базе, просим ввести id повторно
@@ -79,24 +84,24 @@ async def correct_new_balance(
     tg_id = dialog_manager.dialog_data["tg_id"]
     currency = dialog_manager.dialog_data["currency"]
     session = dialog_manager.middleware_data["session"]
-    user_db = await orm_select_user_profile(session, tg_id)
+    user_profile_db = await orm_select_user_profile(session, tg_id)
     new_balance = int(text)
     dialog_manager.dialog_data.update({"amount": new_balance})
     # записываем старый баланс
     if currency == "gold":
-        dialog_manager.dialog_data.update({"old_balance": user_db.gold})
+        dialog_manager.dialog_data.update({"old_balance": user_profile_db.gold})
     elif currency == "stones":
-        dialog_manager.dialog_data.update({"old_balance": user_db.stones})
+        dialog_manager.dialog_data.update({"old_balance": user_profile_db.stones})
     elif currency == "protection":
-        dialog_manager.dialog_data.update({"old_balance": user_db.protection})
+        dialog_manager.dialog_data.update({"old_balance": user_profile_db.protection})
     elif currency == "documents":
-        dialog_manager.dialog_data.update({"old_balance": user_db.documents})
+        dialog_manager.dialog_data.update({"old_balance": user_profile_db.documents})
     elif currency == "antivirus":
-        dialog_manager.dialog_data.update({"old_balance": user_db.antivirus})
+        dialog_manager.dialog_data.update({"old_balance": user_profile_db.antivirus})
     elif currency == "active_role":
-        dialog_manager.dialog_data.update({"old_balance": user_db.active_role})
+        dialog_manager.dialog_data.update({"old_balance": user_profile_db.active_role})
     elif currency == "bullet":
-        dialog_manager.dialog_data.update({"old_balance": user_db.bullet})
+        dialog_manager.dialog_data.update({"old_balance": user_profile_db.bullet})
     await dialog_manager.switch_to(states.WorkingClients.CONFIRM_NEW_BALANCE)
 
 
@@ -185,28 +190,28 @@ async def confirm_add_bonus(
     output_currency = dialog_manager.dialog_data["output_currency"]
     amount = dialog_manager.dialog_data["amount"]
     session = dialog_manager.middleware_data["session"]
-    user_db = await orm_select_user_profile(session, tg_id)
+    user_profile_db = await orm_select_user_profile(session, tg_id)
     # начисляем бонус в зависсимости от выбранной внутриигровой валюты
     if currency == "gold":
-        new_balance = user_db.gold + amount
+        new_balance = user_profile_db.gold + amount
         await orm_update_user_profile_gold(session, tg_id, new_balance)
     elif currency == "stones":
-        new_balance = user_db.stones + amount
+        new_balance = user_profile_db.stones + amount
         await orm_update_user_profile_stones(session, tg_id, new_balance)
     elif currency == "protection":
-        new_balance = user_db.protection + amount
+        new_balance = user_profile_db.protection + amount
         await orm_update_user_profile_protection(session, tg_id, new_balance)
     elif currency == "documents":
-        new_balance = user_db.documents + amount
+        new_balance = user_profile_db.documents + amount
         await orm_update_user_profile_documents(session, tg_id, new_balance)
     elif currency == "antivirus":
-        new_balance = user_db.antivirus + amount
+        new_balance = user_profile_db.antivirus + amount
         await orm_update_user_profile_antivirus(session, tg_id, new_balance)
     elif currency == "active_role":
-        new_balance = user_db.active_role + amount
+        new_balance = user_profile_db.active_role + amount
         await orm_update_user_profile_active_role(session, tg_id, new_balance)
     elif currency == "bullet":
-        new_balance = user_db.bullet + amount
+        new_balance = user_profile_db.bullet + amount
         await orm_update_user_profile_bullet(session, tg_id, new_balance)
     # высылаем сообщение пользователю
     await callback.bot.send_message(
@@ -218,13 +223,71 @@ async def confirm_add_bonus(
     await dialog_manager.switch_to(states.WorkingClients.CORRECT_ID)
 
 
+# Хэнндлер который сработает на кнопку Вся история платежей (выведет историю платежей файлом)
+async def out_all_history_pay(
+    callback: CallbackQuery, button: Button, dialog_manager: DialogManager
+):
+    tg_id = dialog_manager.dialog_data["tg_id"]
+    # transaction_db = SQL_TH()
+    file_name = f"all_history-{tg_id}_admin-{callback.from_user.id}.txt"
+    # transactions = transaction_db.SELECT_USER_transaction(tg_id)
+    transactions_output = "Вся история\n"
+    # for number in range(len(transactions)):
+    #     if transactions[number][5] == "0" or transactions[number][5] == None:
+    #         transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+    #     else:
+    #         transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - {transactions[number][5]}\n"
+    #     transactions_output += transaction
+    # запишем всю историю в файл
+    with open(file_name, "a") as file:
+        file.write(transactions_output)
+    # если не происходит ошибок выведем файл с историей
+    try:
+        await callback.message.delete()
+        document = FSInputFile(file_name)
+        await callback.message.answer_document(document)
+        os.remove(file_name)
+    except Exception as e:
+        logging.ERROR(f"Ошибка при выводе истории платежей - {str(e)}")
+    await dialog_manager.switch_to(states.WorkingClients.ALL_HISTORY_PAY)
+
+
+# Хэнндлер который сработает на кнопку Вся история игр (выведет историю платежей файлом) НА ИГРЫ ПЕРЕДЕЛАТЬ
+async def out_all_history_plays(
+    callback: CallbackQuery, button: Button, dialog_manager: DialogManager
+):
+    tg_id = dialog_manager.dialog_data["tg_id"]
+    # transaction_db = SQL_TH()
+    file_name = f"all_history-{tg_id}_admin-{callback.from_user.id}.txt"
+    # transactions = transaction_db.SELECT_USER_transaction(tg_id)
+    transactions_output = "Вся история\n"
+    # for number in range(len(transactions)):
+    #     if transactions[number][5] == "0" or transactions[number][5] == None:
+    #         transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+    #     else:
+    #         transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - {transactions[number][5]}\n"
+    #     transactions_output += transaction
+    # запишем всю историю в файл
+    with open(file_name, "a") as file:
+        file.write(transactions_output)
+    # если не происходит ошибок выведем файл с историей
+    try:
+        await callback.message.delete()
+        document = FSInputFile(file_name)
+        await callback.message.answer_document(document)
+        os.remove(file_name)
+    except Exception as e:
+        logging.ERROR(f"Ошибка при выводе истории платежей - {str(e)}")
+    await dialog_manager.switch_to(states.WorkingClients.ALL_HISTORY_PLAYS)
+
+
 # Хэндлер который сработает при нажатии Удалить в Удалить клиента
 async def deleting_user(
     callback: CallbackQuery, button: Button, dialog_manager: DialogManager
 ):
     tg_id = dialog_manager.dialog_data["tg_id"]
     session: AsyncSession = dialog_manager.middleware_data["session"]
-    # Удаляем клиента в базе
+    # Удаляем клиента в базе ДОБАВИТЬ
     print("УДАЛЕНИЕ")
     await dialog_manager.switch_to(state=states.WorkingClients.DELETING)
 
@@ -233,17 +296,17 @@ async def deleting_user(
 async def id_getter(dialog_manager: DialogManager, **kwargs):
     tg_id = dialog_manager.dialog_data["tg_id"]
     session: AsyncSession = dialog_manager.middleware_data["session"]
-    user_db = await orm_select_user_profile(session, tg_id)
+    user_profile_db = await orm_select_user_profile(session, tg_id)
     return {
         # добавить имя и юзернейм
         "tg_id": tg_id,
-        "gold": user_db.gold,
-        "stones": user_db.stones,
-        "protection": user_db.protection,
-        "documents": user_db.documents,
-        "antivirus": user_db.antivirus,
-        "active_role": user_db.active_role,
-        "bullet": user_db.bullet,
+        "gold": user_profile_db.gold,
+        "stones": user_profile_db.stones,
+        "protection": user_profile_db.protection,
+        "documents": user_profile_db.documents,
+        "antivirus": user_profile_db.antivirus,
+        "active_role": user_profile_db.active_role,
+        "bullet": user_profile_db.bullet,
     }
 
 
@@ -292,6 +355,56 @@ async def confirm_add_bonus_getter(dialog_manager: DialogManager, **kwargs):
     return dialog_manager.dialog_data
 
 
+# Геттер для формирования истории транзакций и передачи в окно
+async def transactions_getter(dialog_manager: DialogManager, **kwargs):
+    tg_id = dialog_manager.dialog_data["tg_id"]
+    # transaction_db = SQL_TH()
+    # transactions = transaction_db.SELECT_USER_transaction(tg_id)
+    transactions_output = ""
+    # если история платежей небольшая выведем её всю
+    # if len(transactions) <= 10:
+    #     for number in range(len(transactions)):
+    #         if transactions[number][5] == "0" or transactions[number][5] == None:
+    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+    #         else:
+    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+    #         transactions_output += transaction
+    # # в ином случае обрежем её до 10 пунктов
+    # else:
+    #     for number in range(len(transactions) - 10, len(transactions)):
+    #         if transactions[number][5] == "0" or transactions[number][5] == None:
+    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+    #         else:
+    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+    #         transactions_output += transaction
+    return {"transactions_output": transactions_output}
+
+
+# Геттер для формирования истории игр и передачи в окно ПЕРЕРАБОТАТЬ НА ИГРЫ
+async def plays_getter(dialog_manager: DialogManager, **kwargs):
+    tg_id = dialog_manager.dialog_data["tg_id"]
+    # transaction_db = SQL_TH()
+    # transactions = transaction_db.SELECT_USER_transaction(tg_id)
+    transactions_output = ""
+    # если история платежей небольшая выведем её всю
+    # if len(transactions) <= 10:
+    #     for number in range(len(transactions)):
+    #         if transactions[number][5] == "0" or transactions[number][5] == None:
+    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+    #         else:
+    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+    #         transactions_output += transaction
+    # # в ином случае обрежем её до 10 пунктов
+    # else:
+    #     for number in range(len(transactions) - 10, len(transactions)):
+    #         if transactions[number][5] == "0" or transactions[number][5] == None:
+    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+    #         else:
+    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+    #         transactions_output += transaction
+    return {"transactions_output": transactions_output}
+
+
 # Геттер для передачи данных о пользователе в окно удаления
 async def id_for_del_getter(dialog_manager: DialogManager, **kwargs):
     tg_id = dialog_manager.dialog_data["tg_id"]
@@ -335,14 +448,14 @@ correct_id_window = Window(
             state=states.WorkingClients.BALANCE,
         ),
         SwitchTo(
-            text=Const("История"),
-            id="history_pay",
-            state=states.WorkingClients.HISTORY,
-        ),
-        SwitchTo(
             text=Const("Начислить бонусы"),
             id="add_bonus",
             state=states.WorkingClients.BONUS,
+        ),
+        SwitchTo(
+            text=Const("Истории"),
+            id="history_pay",
+            state=states.WorkingClients.HISTORY,
         ),
         SwitchTo(
             text=Const("Удалить клиента"),
@@ -395,7 +508,11 @@ confirm_new_balance_window = Window(
         text="Подтверждаете изменение баланса с {old_balance} {output_currency} на {amount} {output_currency} ?"
     ),
     Group(
-        Button(text=Const("Да"), id="confirm_new_balance_user", on_click=confirm_new_balance_user),
+        Button(
+            text=Const("Да"),
+            id="confirm_new_balance_user",
+            on_click=confirm_new_balance_user,
+        ),
         SwitchTo(
             text=Const("Нет"),
             id="no_confirm_new_balance_user",
@@ -415,7 +532,9 @@ send_update_balance_window = Window(
         "Выслать уведомление клиенту?"
     ),
     Group(
-        Button(text=Const("Да"), id="send_new_balance_user", on_click=send_new_balance_user),
+        Button(
+            text=Const("Да"), id="send_new_balance_user", on_click=send_new_balance_user
+        ),
         SwitchTo(
             text=Const("Нет"),
             id="no_send_new_balance_user",
@@ -480,6 +599,80 @@ confirm_add_bonus_window = Window(
 )
 
 
+# Окно Истории
+history_window = Window(
+    Const("Выберите тип истории для вывода"),
+    Group(
+        SwitchTo(
+            text=Const("История платежей"),
+            id="history_pay",
+            state=states.WorkingClients.HISTORY_PAY,
+        ),
+        SwitchTo(
+            text=Const("История игр"),
+            id="history_plays",
+            state=states.WorkingClients.HISTORY_PLAYS,
+        ),
+        BACK_TO_INFO_CLIENT_BUTTON,
+        width=2,
+    ),
+    state=states.WorkingClients.HISTORY,
+)
+
+
+# Окно История платежей
+history_pay_window = Window(
+    Const(text="История платежей\n"),
+    Format(text="{transactions_output}"),
+    Button(Const("Вся история"), id="all_history_pay", on_click=out_all_history_pay),
+    SwitchTo(
+        text=Const("🔙 Назад"),
+        id="back_history",
+        state=states.WorkingClients.HISTORY,
+    ),
+    getter=transactions_getter,
+    state=states.WorkingClients.HISTORY_PAY,
+)
+
+
+# Окно вся история платежей
+all_history_pay_window = Window(
+    Format(text="Вся история платежей"),
+    SwitchTo(
+        text=Const("🔙 Назад"),
+        id="back_history_pay",
+        state=states.WorkingClients.HISTORY_PAY,
+    ),
+    state=states.WorkingClients.ALL_HISTORY_PAY,
+)
+
+
+# Окно История игр
+history_plays_window = Window(
+    Const(text="История игр\n"),
+    Format(text="{plays_output}"),
+    Button(Const("Вся история"), id="all_history_plays", on_click=out_all_history_plays),
+    SwitchTo(
+        text=Const("🔙 Назад"),
+        id="back_history",
+        state=states.WorkingClients.HISTORY,
+    ),
+    getter=plays_getter,
+    state=states.WorkingClients.HISTORY_PLAYS,
+)
+
+
+# Окно вся история игр
+all_history_plays_window = Window(
+    Format(text="Вся история игр"),
+    SwitchTo(
+        text=Const("🔙 Назад"),
+        id="back_history_plays",
+        state=states.WorkingClients.HISTORY_PLAYS,
+    ),
+    state=states.WorkingClients.ALL_HISTORY_PLAYS,
+)
+
 # Окно Удалить клиента
 delete_user_window = Window(
     Format(text="Уверены что хотите удалить клиента -  {tg_id} ?"),
@@ -512,6 +705,9 @@ working_clients_dialog = Dialog(
     bonus_window,
     input_bonus_window,
     confirm_add_bonus_window,
+    history_window,
+    history_pay_window,
+    all_history_pay_window,
     delete_user_window,
     deleting_user_window,
 )

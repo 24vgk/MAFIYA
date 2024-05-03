@@ -18,7 +18,12 @@ class WorkingClients(StatesGroup):
     BONUS = State()
     INPUT_BONUS = State()
     CONFIRM_ADD_BONUS = State()
+    # Истории
     HISTORY = State()
+    HISTORY_PAY = State()
+    ALL_HISTORY_PAY = State()
+    HISTORY_PLAYS = State()
+    ALL_HISTORY_PLAYS = State()
     # Удалить клиента
     DELETE_USER = State()
     DELETING = State()
