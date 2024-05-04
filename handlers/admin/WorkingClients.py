@@ -8,13 +8,21 @@ from aiogram_dialog import Dialog, Window, DialogManager, StartMode
 from aiogram_dialog.widgets.input import ManagedTextInput, TextInput
 from aiogram_dialog.widgets.kbd import Start, SwitchTo, Cancel, Group, Button, Select
 from aiogram_dialog.widgets.text import Const, Format, List, Multi
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from handlers.admin import states_dialog as states
 from handlers.admin.common import MAIN_MENU_BUTTON, BACK_TO_INFO_CLIENT_BUTTON
 from config_bd.Users import (
     orm_add_user,
-    orm_select_user_profile,
+    orm_select_user,
+    orm_update_user_first_name,
+    orm_update_user_user_name,
+    orm_update_user_refer,
+    orm_update_user_bonus,
+    orm_update_user_is_admin,
+    orm_delete_user,
     orm_add_user_profile,
+    orm_select_user_profile,
     orm_update_user_profile_on_off,
     orm_update_user_profile_stones,
     orm_update_user_profile_gold,
@@ -23,8 +31,15 @@ from config_bd.Users import (
     orm_update_user_profile_documents,
     orm_update_user_profile_active_role,
     orm_update_user_profile_bullet,
+    orm_select_user_history_balance,
+    orm_update_user_history_balance_type,
+    orm_update_user_history_balance_comment,
+    orm_update_user_history_balance_sum,
+    orm_select_user_history_play,
+    orm_update_user_history_play_type,
+    orm_update_user_history_play_comment,
+    orm_update_user_history_play_num_play
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 # Проверка id
@@ -46,11 +61,11 @@ async def correct_id(
     message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
 ):
     session: AsyncSession = dialog_manager.middleware_data["session"]
-    user_profile_db = await orm_select_user_profile(
+    user_db = await orm_select_user(
         session, text
-    )  # заменить на базу юзера
-    # если пользователь есть в базе переводи в след сосотояние
-    if user_profile_db is not None:
+    )
+    # если пользователь есть в базе переводим в следующее сосотояние
+    if user_db is not None:
         dialog_manager.dialog_data.update({"tg_id": text})
         await dialog_manager.switch_to(states.WorkingClients.CORRECT_ID)
     # если пользоваетля нет в базе, просим ввести id повторно
@@ -183,7 +198,7 @@ async def uncorrect_bonus(
 
 # Хэндлер зачисления бонуса ДОПИСАТЬ ЗАПИСЬ В ИСТОРИЮ ТРАНЗАКЦИЙ!!!!!!
 async def confirm_add_bonus(
-    button: Button, callback: CallbackQuery, dialog_manager: DialogManager
+    callback: CallbackQuery, button: Button, dialog_manager: DialogManager
 ):
     tg_id = dialog_manager.dialog_data["tg_id"]
     currency = dialog_manager.dialog_data["currency"]
@@ -296,10 +311,12 @@ async def deleting_user(
 async def id_getter(dialog_manager: DialogManager, **kwargs):
     tg_id = dialog_manager.dialog_data["tg_id"]
     session: AsyncSession = dialog_manager.middleware_data["session"]
+    user_db = await orm_select_user(session, tg_id)
     user_profile_db = await orm_select_user_profile(session, tg_id)
     return {
-        # добавить имя и юзернейм
+        "first_name": user_db.first_name,
         "tg_id": tg_id,
+        "user_name": user_db.user_name,
         "gold": user_profile_db.gold,
         "stones": user_profile_db.stones,
         "protection": user_profile_db.protection,
@@ -358,50 +375,54 @@ async def confirm_add_bonus_getter(dialog_manager: DialogManager, **kwargs):
 # Геттер для формирования истории транзакций и передачи в окно
 async def transactions_getter(dialog_manager: DialogManager, **kwargs):
     tg_id = dialog_manager.dialog_data["tg_id"]
-    # transaction_db = SQL_TH()
-    # transactions = transaction_db.SELECT_USER_transaction(tg_id)
+    session = dialog_manager.middleware_data["session"]
+    transaction_db = await orm_select_user_history_balance(session, tg_id)
     transactions_output = ""
-    # если история платежей небольшая выведем её всю
-    # if len(transactions) <= 10:
-    #     for number in range(len(transactions)):
-    #         if transactions[number][5] == "0" or transactions[number][5] == None:
-    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-    #         else:
-    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
-    #         transactions_output += transaction
-    # # в ином случае обрежем её до 10 пунктов
-    # else:
-    #     for number in range(len(transactions) - 10, len(transactions)):
-    #         if transactions[number][5] == "0" or transactions[number][5] == None:
-    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-    #         else:
-    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
-    #         transactions_output += transaction
+    # если история платежей не пустая
+    # if transaction_db is not None:
+        # если история платежей небольшая выведем её всю
+        # if len(transaction_db) <= 10:
+        #     for number in len(range(transaction_db)):
+        #         # if transaction[number][5] == "0" or transactions[number][5] == None:
+        #         transaction_out = f"{number+1}: {transaction_db[number].created} - {transaction_db[number].sum} RUB - {transaction_db[number].type} - {transaction_db[number].comment}\n"
+        #         # else:
+        #         #     transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+        #         transactions_output += transaction_out
+        # в ином случае обрежем её до 10 пунктов
+        # else:
+        #     for number in range(len(transactions) - 10, len(transactions)):
+        #         if transactions[number][5] == "0" or transactions[number][5] == None:
+        #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+        #         else:
+        #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+        #         transactions_output += transaction
     return {"transactions_output": transactions_output}
 
 
 # Геттер для формирования истории игр и передачи в окно ПЕРЕРАБОТАТЬ НА ИГРЫ
 async def plays_getter(dialog_manager: DialogManager, **kwargs):
     tg_id = dialog_manager.dialog_data["tg_id"]
-    # transaction_db = SQL_TH()
-    # transactions = transaction_db.SELECT_USER_transaction(tg_id)
+    session = dialog_manager.middleware_data["session"]
+    transaction_db = orm_select_user_history_balance(session, tg_id)
     transactions_output = ""
-    # если история платежей небольшая выведем её всю
-    # if len(transactions) <= 10:
-    #     for number in range(len(transactions)):
-    #         if transactions[number][5] == "0" or transactions[number][5] == None:
-    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-    #         else:
-    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
-    #         transactions_output += transaction
-    # # в ином случае обрежем её до 10 пунктов
-    # else:
-    #     for number in range(len(transactions) - 10, len(transactions)):
-    #         if transactions[number][5] == "0" or transactions[number][5] == None:
-    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-    #         else:
-    #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
-    #         transactions_output += transaction
+    # если история платежей не пустая
+    # if transaction_db is not None:
+    #      # если история платежей небольшая выведем её всю
+    #     if len(transaction_db) <= 10:
+    #         for number in range(len(transactions)):
+    #             if transactions[number][5] == "0" or transactions[number][5] == None:
+    #                 transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+    #             else:
+    #                 transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+    #             transactions_output += transaction
+    #     # в ином случае обрежем её до 10 пунктов
+    #     else:
+    #         for number in range(len(transactions) - 10, len(transactions)):
+    #             if transactions[number][5] == "0" or transactions[number][5] == None:
+    #                 transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
+    #             else:
+    #                 transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+    #             transactions_output += transaction
     return {"transactions_output": transactions_output}
 
 
@@ -428,11 +449,11 @@ working_clients_window = Window(
 # Окно работы с клиентом
 correct_id_window = Window(
     Multi(
-        # Format("<b>User:</b> {name_user}\n", when="name_user"),
+        Format("<b>User:</b> {first_name}\n", when="first_name"),
         Format("<b>ID:</b> <code>{tg_id}</code>"),
-        # Format("\n<b>Username:</b> <code>{login}</code>", when="login"),
+        Format("\n<b>Username:</b> <code>{user_name}</code>", when="user_name"),
         Format(
-            "💰 Золото: {gold}\n"
+            "\n\n💰 Золото: {gold}\n"
             "💎 Камни: {stones}\n"
             "🛡 Защита: {protection}\n"
             "📂 Документы: {documents}\n"
@@ -440,6 +461,7 @@ correct_id_window = Window(
             "🎎 Активная роль: {active_role}\n"
             "☠ Бронебойная пуля: {bullet}\n"
         ),
+        sep="",
     ),
     Group(
         SwitchTo(

@@ -18,6 +18,8 @@ from config_data.config import Config, load_config
 from handlers import admin_handlers, other_handlers, sheduler_distribution, game_handlers
 from handlers.admin.Main import main_menu_dialog
 from handlers.admin.WorkingClients import working_clients_dialog
+from handlers.admin.SendMessages import send_messages_dialog
+from handlers.admin.ServiceScripts import services_scripts_dialog
 from handlers.admin.GetLogs import get_logs_dialog
 
 # Инициализируем логгер
@@ -71,6 +73,8 @@ async def main() -> None:
     dp.include_router(admin_handlers.router)
     dp.include_router(main_menu_dialog)
     dp.include_router(working_clients_dialog)
+    dp.include_router(send_messages_dialog)
+    dp.include_router(services_scripts_dialog)
     dp.include_router(get_logs_dialog)
     dp.include_router(game_handlers.router)
     dp.include_router(other_handlers.router)
