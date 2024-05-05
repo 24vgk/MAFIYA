@@ -25,7 +25,8 @@ async def delete_warning_message(message: Message):
 async def com_help(callback: CallbackQuery, session: AsyncSession):
     print(callback)
     if callback.message.chat.id == -1001892980253:
-        if pl.select_play_user(session, callback.from_user.id, callback.message.chat.id) is not None:
+        x = await pl.select_play_user(session, callback.from_user.id, callback.message.chat.id)
+        if len(x) != 0:
             await callback.message.answer(text='Вы уже играете')
         else:
         # await callback.message.delete()

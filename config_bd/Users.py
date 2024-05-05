@@ -156,6 +156,19 @@ async def orm_update_user_profile_bullet(session: AsyncSession, telegram_id: str
 
 # РАБОТА С ТАБЛИЦЕЙ USERS_HISTORY_BALANCE
 
+async def orm_add_user_history_balance(session: AsyncSession, telegram_id: str, type: str, comment: str, sum: int):
+    """
+    Добавляет данные по изменению баланса пользователя
+    """
+    obj = Users_history_balance(
+        telegram_id=telegram_id,
+        type=type,
+        comment=comment,
+        sum=sum
+    )
+    session.add(obj)
+    await session.commit()
+
 
 async def orm_select_user_history_balance(session: AsyncSession, telegram_id: str):
     """
@@ -167,7 +180,7 @@ async def orm_select_user_history_balance(session: AsyncSession, telegram_id: st
     query = select(Users_history_balance).where(Users_history_balance.telegram_id == telegram_id)
     try:
         result = await session.execute(query)
-        return result.scalars().one()
+        return result.scalars().all()
     except NoResultFound:
         return None
 
@@ -192,6 +205,19 @@ async def orm_update_user_history_balance_sum(session: AsyncSession, telegram_id
 
 # РАБОТА С ТАБЛИЦЕЙ USERS_HISTORY_PLAY
 
+async def orm_add_user_history_play(session: AsyncSession, telegram_id: str, type: str, comment: str, num_play: int):
+    """
+    Добавляет данные по изменению баланса пользователя
+    """
+    obj = Users_history_balance(
+        telegram_id=telegram_id,
+        type=type,
+        comment=comment,
+        num_play=num_play
+    )
+    session.add(obj)
+    await session.commit()
+
 
 async def orm_select_user_history_play(session: AsyncSession, telegram_id: str):
     """
@@ -203,7 +229,7 @@ async def orm_select_user_history_play(session: AsyncSession, telegram_id: str):
     query = select(Users_history_play).where(Users_history_play.telegram_id == telegram_id)
     try:
         result = await session.execute(query)
-        return result.scalars().one()
+        return result.scalars().all()
     except NoResultFound:
         return None
 

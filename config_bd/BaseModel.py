@@ -42,7 +42,7 @@ class Users_history_balance(Base):
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, unique=True)
     telegram_id: Mapped[str] = mapped_column(String(20),
                                              ForeignKey("Users.telegram_id", ondelete="CASCADE", onupdate="CASCADE"),
-                                             nullable=True, unique=True)
+                                             nullable=True)
     type: Mapped[int] = mapped_column(String(100))
     comment: Mapped[int] = mapped_column(String(100))
     sum: Mapped[int] = mapped_column()
@@ -54,7 +54,7 @@ class Users_history_play(Base):
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, unique=True)
     telegram_id: Mapped[str] = mapped_column(String(20),
                                              ForeignKey("Users.telegram_id", ondelete="CASCADE", onupdate="CASCADE"),
-                                             nullable=True, unique=True)
+                                             nullable=True)
     type: Mapped[int] = mapped_column(String(100))
     comment: Mapped[int] = mapped_column(String(100))
     num_play: Mapped[int] = mapped_column()

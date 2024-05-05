@@ -11,6 +11,13 @@ LEXICON_START: dict[str, str] = {
     "info": "Информация"
 }
 
+LEXICON_START_ADMIN: dict[str, str] = {
+    "script": "Сценарий",
+    "profile": "Профиль",
+    "info": "Информация",
+    "adm": "Админка"
+}
+
 LEXICON_START_TEXT: dict[str, str] = {
     "start_text": "Приветствую тебя {user_name}!\n\n"
                   "Я готов провести незабываемую игру для тебя и твоей компании!\n\n"

@@ -1,4 +1,5 @@
 from sqlalchemy import select, update, delete
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config_bd.BaseModel import Plays
@@ -21,6 +22,6 @@ async def select_play_user(session: AsyncSession, user, group):
 
 async def update_users_game(session: AsyncSession, user, play_id, position):
     query = select(Plays).where(Plays.play_id == play_id)
-    # if query.user2 == :
-    # session.add(obj)
-    # await session.commit()
+    res = await session.execute(query)
+    if user in res.scalars().all():
+        print(res.scalars().all())

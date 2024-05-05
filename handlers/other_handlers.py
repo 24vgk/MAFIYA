@@ -15,12 +15,13 @@ from lexicon import lexicon_other as lx
 from config_bd.Users import orm_add_user, orm_select_user_profile, orm_add_user_profile, \
     orm_update_user_profile_on_off, orm_update_user_profile_stones, orm_update_user_profile_gold, \
     orm_update_user_profile_protection, orm_update_user_profile_antivirus, orm_update_user_profile_documents, \
-    orm_update_user_profile_active_role, orm_update_user_profile_bullet
+    orm_update_user_profile_active_role, orm_update_user_profile_bullet, orm_select_user
 
 # Инициализируем роутер уровня модуля
 router: Router = Router()
 
 start_keyboard = keyboard.generate_all(2, **lx.LEXICON_START)
+start_keyboard_admin = keyboard.generate_all(2, **lx.LEXICON_START_ADMIN)
 profile_keyboard_on = keyboard.generate_all(1, **lx.LEXICON_PROFILE_BUTTON_ON)
 profile_keyboard_off = keyboard.generate_all(1, **lx.LEXICON_PROFILE_BUTTON_OFF)
 shop_keyboard = keyboard.generate_all(2, **lx.LEXICON_SHOP_BUTTON)
@@ -31,22 +32,61 @@ info_keyboard = keyboard.generate_all(1, **lx.LEXICON_ROLE_INFO_BUTTON)
 @router.message(CommandStart())
 async def start(message: Message, session: AsyncSession):
     try:
-        await orm_add_user(
-            session,
-            str(message.from_user.id),
-            message.from_user.first_name,
-            message.from_user.username
-        )
-        await orm_add_user_profile(session, str(message.from_user.id))
-        await message.answer(
-            text=lx.LEXICON_START_TEXT['start_text'].format(
-                user_name=message.from_user.first_name
-            ), reply_markup=start_keyboard
-        )
+        user = await orm_select_user(session, str(message.from_user.id))
+        if user:
+            await message.answer(
+                text=lx.LEXICON_START_TEXT['start_text'].format(
+                    user_name=message.from_user.first_name
+                ), reply_markup=start_keyboard_admin
+            )
+        else:
+            await orm_add_user(
+                session,
+                str(message.from_user.id),
+                message.from_user.first_name,
+                message.from_user.username
+            )
+            await orm_add_user_profile(session, str(message.from_user.id))
+            await message.answer(
+                text=lx.LEXICON_START_TEXT['start_text'].format(
+                    user_name=message.from_user.first_name
+                ), reply_markup=start_keyboard
+            )
     except IntegrityError as e:
         print(str(e))
         await message.answer(
             f'С возвращением {message.from_user.first_name}',
+            reply_markup=start_keyboard
+        )
+
+
+@router.callback_query(F.data == "main")
+async def start(callback: CallbackQuery, session: AsyncSession):
+    try:
+        user = await orm_select_user(session, str(callback.message.from_user.id))
+        if user:
+            await callback.message.answer(
+                text=lx.LEXICON_START_TEXT['start_text'].format(
+                    user_name=callback.message.from_user.first_name
+                ), reply_markup=start_keyboard_admin
+            )
+        else:
+            await orm_add_user(
+                session,
+                str(callback.message.from_user.id),
+                callback.message.from_user.first_name,
+                callback.message.from_user.username
+            )
+            await orm_add_user_profile(session, str(callback.message.from_user.id))
+            await callback.message.answer(
+                text=lx.LEXICON_START_TEXT['start_text'].format(
+                    user_name=callback.message.from_user.first_name
+                ), reply_markup=start_keyboard
+            )
+    except IntegrityError as e:
+        print(str(e))
+        await callback.message.answer(
+            f'С возвращением {callback.message.from_user.first_name}',
             reply_markup=start_keyboard
         )
 
