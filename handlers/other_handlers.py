@@ -91,6 +91,38 @@ async def start(callback: CallbackQuery, session: AsyncSession):
         )
 
 
+@router.message(Command(commands="main_menu"))
+async def start(message: Message, session: AsyncSession):
+    try:
+        user = await orm_select_user(session, str(message.from_user.id))
+        if user:
+            await message.answer(
+                text=lx.LEXICON_START_TEXT['start_text'].format(
+                    user_name=message.from_user.first_name
+                ), reply_markup=start_keyboard_admin
+            )
+        else:
+            await orm_add_user(
+                session,
+                str(message.from_user.id),
+                message.from_user.first_name,
+                message.from_user.username
+            )
+            await orm_add_user_profile(session, str(message.from_user.id))
+            await message.answer(
+                text=lx.LEXICON_START_TEXT['start_text'].format(
+                    user_name=message.from_user.first_name
+                ), reply_markup=start_keyboard
+            )
+    except IntegrityError as e:
+        print(str(e))
+        await message.answer(
+            f'С возвращением {message.from_user.first_name}',
+            reply_markup=start_keyboard
+        )
+
+
+
 @router.callback_query(F.data == "back_profile")
 async def back_start(callback: CallbackQuery):
     await callback.message.edit_text(
@@ -414,9 +446,3 @@ async def com_help(message: Message):
 #     print(callback)
 
 
-# Этот хэндлер удаляет сообщения которые не обрабатываются
-@router.message()
-async def delete_warning_message(message: Message):
-    print(message.chat.id)
-    await message.delete()
-    await message.answer(text='вы зарегистрировали игру')
