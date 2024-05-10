@@ -72,12 +72,12 @@ async def main() -> None:
     dp.update.middleware.register(SchedulerMiddleware(scheduler))
     dp.include_router(admin_handlers.router)
     dp.include_router(main_menu_dialog)
+    dp.include_router(game_handlers.router)
+    dp.include_router(other_handlers.router)
     dp.include_router(working_clients_dialog)
     dp.include_router(send_messages_dialog)
     dp.include_router(services_scripts_dialog)
     dp.include_router(get_logs_dialog)
-    dp.include_router(game_handlers.router)
-    dp.include_router(other_handlers.router)
     setup_dialogs(dp)
 
     # Пропускаем накопившиеся апдейты и запускаем polling
