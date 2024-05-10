@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from handlers.admin import states_dialog as states
 from handlers.admin.common import MAIN_MENU_BUTTON, BACK_TO_INFO_CLIENT_BUTTON
+from lexicon import lexicon_other
+from keyboards import inline
 from config_bd.Users import (
     orm_add_user,
     orm_select_user,
@@ -31,10 +33,12 @@ from config_bd.Users import (
     orm_update_user_profile_documents,
     orm_update_user_profile_active_role,
     orm_update_user_profile_bullet,
+    orm_add_user_history_balance,
     orm_select_user_history_balance,
     orm_update_user_history_balance_type,
     orm_update_user_history_balance_comment,
     orm_update_user_history_balance_sum,
+    orm_add_user_history_play,
     orm_select_user_history_play,
     orm_update_user_history_play_type,
     orm_update_user_history_play_comment,
@@ -92,7 +96,7 @@ async def select_currency_balance(
     await dialog_manager.switch_to(states.WorkingClients.INPUT_NEW_BALANCE)
 
 
-# Хэндлер, который сработает после ввода нового значения баланса ДОПИСАТЬ ЗАПИСЬ В ИСТОРИЮ ТРАНЗАКЦИЙ!!!!!!
+# Хэндлер, который сработает после ввода нового значения баланса
 async def correct_new_balance(
     message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
 ):
@@ -120,7 +124,7 @@ async def correct_new_balance(
     await dialog_manager.switch_to(states.WorkingClients.CONFIRM_NEW_BALANCE)
 
 
-# Хэндлер, который сработает, если введено не число при вводе не числа
+# Хэндлер, который сработает, если введено не число при вводе баланса
 async def uncorrect_new_balance(
     message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
 ):
@@ -128,7 +132,7 @@ async def uncorrect_new_balance(
     await dialog_manager.switch_to(states.WorkingClients.INPUT_NEW_BALANCE)
 
 
-# Хэндлер после подтверждения измения баланса
+# Хэндлер после подтверждения измения баланса (добавить валюту!!!!!)
 async def confirm_new_balance_user(
     callback: CallbackQuery, button: Button, dialog_manager: DialogManager
 ):
@@ -139,18 +143,25 @@ async def confirm_new_balance_user(
     # изменяем баланс в зависимости от выранной валюты
     if currency == "gold":
         await orm_update_user_profile_gold(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Изменение", "Изменение баланса тех. поддержкой", new_balance)
     elif currency == "stones":
         await orm_update_user_profile_stones(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Изменение", "Изменение баланса тех. поддержкой", new_balance)
     elif currency == "protection":
         await orm_update_user_profile_protection(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Изменение", "Изменение баланса тех. поддержкой", new_balance)
     elif currency == "documents":
         await orm_update_user_profile_documents(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Изменение", "Изменение баланса тех. поддержкой", new_balance)
     elif currency == "antivirus":
         await orm_update_user_profile_antivirus(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Изменение", "Изменение баланса тех. поддержкой", new_balance)
     elif currency == "active_role":
         await orm_update_user_profile_active_role(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Изменение", "Изменение баланса тех. поддержкой", new_balance)
     elif currency == "bullet":
         await orm_update_user_profile_bullet(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Изменение", "Изменение баланса тех. поддержкой", new_balance)
     await dialog_manager.switch_to(states.WorkingClients.SEND_UPDATE_BALANCE)
 
 
@@ -166,7 +177,7 @@ async def send_new_balance_user(
         chat_id=tg_id,
         text=f"Ваш баланс внутриигровой валюты {output_currency} изменен технической поддержкой\n\n"
         f"Текущий баланс {output_currency}: {amount}",
-        # reply_markup=inline.distribution_admin, КНОПКА В ЛИЧНЫЙ КАБИНЕТ
+        reply_markup=inline.generate_all(1, **lexicon_other.LEXICON_RETURN_MAIN_MENU)
     )
     await dialog_manager.switch_to(states.WorkingClients.CORRECT_ID)
 
@@ -188,7 +199,7 @@ async def correct_bonus(
     await dialog_manager.switch_to(states.WorkingClients.CONFIRM_ADD_BONUS)
 
 
-# Хэндлер, который сработает, если введено не число при вводе не числа
+# Хэндлер, который сработает, если введено не число при вводе бонуса
 async def uncorrect_bonus(
     message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str
 ):
@@ -196,7 +207,7 @@ async def uncorrect_bonus(
     await dialog_manager.switch_to(states.WorkingClients.INPUT_BONUS)
 
 
-# Хэндлер зачисления бонуса ДОПИСАТЬ ЗАПИСЬ В ИСТОРИЮ ТРАНЗАКЦИЙ!!!!!!
+# Хэндлер зачисления бонуса (добавить валюту!!!!!)
 async def confirm_add_bonus(
     callback: CallbackQuery, button: Button, dialog_manager: DialogManager
 ):
@@ -210,49 +221,60 @@ async def confirm_add_bonus(
     if currency == "gold":
         new_balance = user_profile_db.gold + amount
         await orm_update_user_profile_gold(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Начисление", "Начисление бонуса тех. поддержкой", amount)
     elif currency == "stones":
         new_balance = user_profile_db.stones + amount
         await orm_update_user_profile_stones(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Начисление", "Начисление бонуса тех. поддержкой", amount)
     elif currency == "protection":
         new_balance = user_profile_db.protection + amount
         await orm_update_user_profile_protection(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Начисление", "Начисление бонуса тех. поддержкой", amount)
     elif currency == "documents":
         new_balance = user_profile_db.documents + amount
         await orm_update_user_profile_documents(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Начисление", "Начисление бонуса тех. поддержкой", amount)
     elif currency == "antivirus":
         new_balance = user_profile_db.antivirus + amount
         await orm_update_user_profile_antivirus(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Начисление", "Начисление бонуса тех. поддержкой", amount)
     elif currency == "active_role":
         new_balance = user_profile_db.active_role + amount
         await orm_update_user_profile_active_role(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Начисление", "Начисление бонуса тех. поддержкой", amount)
     elif currency == "bullet":
         new_balance = user_profile_db.bullet + amount
         await orm_update_user_profile_bullet(session, tg_id, new_balance)
+        await orm_add_user_history_balance(session, tg_id, "Начисление", "Начисление бонуса тех. поддержкой", amount)
     # высылаем сообщение пользователю
     await callback.bot.send_message(
         chat_id=tg_id,
-        text=f"Вам зачслен бонус в размере {amount} {output_currency}\n\n"
+        text=f"Вам зачислен бонус в размере {amount} {output_currency}\n\n"
         f"Текущий баланс {output_currency}: {new_balance}",
-        # reply_markup=inline.distribution_admin, КНОПКА В ЛИЧНЫЙ КАБИНЕТ
+        reply_markup=inline.generate_all(1, **lexicon_other.LEXICON_RETURN_MAIN_MENU)
     )
     await dialog_manager.switch_to(states.WorkingClients.CORRECT_ID)
 
 
-# Хэнндлер который сработает на кнопку Вся история платежей (выведет историю платежей файлом)
+# Хэнндлер который сработает на кнопку Вся история платежей (выведет историю платежей файлом) (добавить код платежа и валюту!!!!)
 async def out_all_history_pay(
     callback: CallbackQuery, button: Button, dialog_manager: DialogManager
 ):
     tg_id = dialog_manager.dialog_data["tg_id"]
-    # transaction_db = SQL_TH()
-    file_name = f"all_history-{tg_id}_admin-{callback.from_user.id}.txt"
-    # transactions = transaction_db.SELECT_USER_transaction(tg_id)
-    transactions_output = "Вся история\n"
-    # for number in range(len(transactions)):
-    #     if transactions[number][5] == "0" or transactions[number][5] == None:
-    #         transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-    #     else:
-    #         transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - {transactions[number][5]}\n"
-    #     transactions_output += transaction
+    session = dialog_manager.middleware_data["session"]
+    transaction_db = await orm_select_user_history_balance(session, tg_id)
+    file_name = f"all_history_transactions-{tg_id}_admin-{callback.from_user.id}.txt"
+    transactions_output = "Вся история платежей\n"
+    number = 1
+    # если история платежей не пустая
+    if len(transaction_db) > 0:
+        for transaction in transaction_db:
+            # if transactions[number][5] == "0" or transactions[number][5] == None:
+            transaction_out = f"{number}: {transaction.created} - {transaction.sum} валюта! - {transaction.type} ({transaction.comment})\n"
+            number += 1
+            # else:
+            #     transaction_out = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - {transactions[number][5]}\n"
+            transactions_output += transaction_out
     # запишем всю историю в файл
     with open(file_name, "a") as file:
         file.write(transactions_output)
@@ -267,24 +289,25 @@ async def out_all_history_pay(
     await dialog_manager.switch_to(states.WorkingClients.ALL_HISTORY_PAY)
 
 
-# Хэнндлер который сработает на кнопку Вся история игр (выведет историю платежей файлом) НА ИГРЫ ПЕРЕДЕЛАТЬ
+# Хэнндлер который сработает на кнопку Вся история игр (выведет историю платежей файлом)
 async def out_all_history_plays(
     callback: CallbackQuery, button: Button, dialog_manager: DialogManager
 ):
     tg_id = dialog_manager.dialog_data["tg_id"]
-    # transaction_db = SQL_TH()
-    file_name = f"all_history-{tg_id}_admin-{callback.from_user.id}.txt"
-    # transactions = transaction_db.SELECT_USER_transaction(tg_id)
-    transactions_output = "Вся история\n"
-    # for number in range(len(transactions)):
-    #     if transactions[number][5] == "0" or transactions[number][5] == None:
-    #         transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-    #     else:
-    #         transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - {transactions[number][5]}\n"
-    #     transactions_output += transaction
+    session = dialog_manager.middleware_data["session"]
+    plays_db = await orm_select_user_history_play(session, tg_id)
+    file_name = f"all_history_plays-{tg_id}_admin-{callback.from_user.id}.txt"
+    plays_output = "Вся история игр\n"
+    number = 1
+    # если история игр не пустая
+    if len(plays_db) > 0:
+        for play in plays_db:
+            play_out = f"{number}: {play.created} - {play.num_play} - {play.type}\n"
+            number += 1
+            plays_output += play_out
     # запишем всю историю в файл
     with open(file_name, "a") as file:
-        file.write(transactions_output)
+        file.write(plays_output)
     # если не происходит ошибок выведем файл с историей
     try:
         await callback.message.delete()
@@ -372,58 +395,72 @@ async def confirm_add_bonus_getter(dialog_manager: DialogManager, **kwargs):
     return dialog_manager.dialog_data
 
 
-# Геттер для формирования истории транзакций и передачи в окно
+# Геттер для формирования истории транзакций и передачи в окно (добавить код платежа и валюту!!!!)
 async def transactions_getter(dialog_manager: DialogManager, **kwargs):
     tg_id = dialog_manager.dialog_data["tg_id"]
     session = dialog_manager.middleware_data["session"]
     transaction_db = await orm_select_user_history_balance(session, tg_id)
     transactions_output = ""
+    transactions_empty = True
     # если история платежей не пустая
-    # if transaction_db is not None:
+    if len(transaction_db) > 0:
         # если история платежей небольшая выведем её всю
-        # if len(transaction_db) <= 10:
-        #     for number in len(range(transaction_db)):
-        #         # if transaction[number][5] == "0" or transactions[number][5] == None:
-        #         transaction_out = f"{number+1}: {transaction_db[number].created} - {transaction_db[number].sum} RUB - {transaction_db[number].type} - {transaction_db[number].comment}\n"
-        #         # else:
-        #         #     transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
-        #         transactions_output += transaction_out
+        if len(transaction_db) <= 10:
+            number = 1
+            for transaction in transaction_db:
+                # if transaction[number][5] == "0" or transactions[number][5] == None:
+                transaction_out = f"{number}: {transaction.created} - {transaction.sum} валюта! - {transaction.type} ({transaction.comment})\n"
+                # else:
+                #     transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+                transactions_output += transaction_out
+                number += 1
         # в ином случае обрежем её до 10 пунктов
-        # else:
-        #     for number in range(len(transactions) - 10, len(transactions)):
-        #         if transactions[number][5] == "0" or transactions[number][5] == None:
-        #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-        #         else:
-        #             transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
-        #         transactions_output += transaction
-    return {"transactions_output": transactions_output}
+        else:
+            number = len(transaction_db) - 9
+            for transaction in transaction_db:
+                # if transactions[number][5] == "0" or transactions[number][5] == None:
+                transaction_out = f"{number}: {transaction.created} - {transaction.sum} валюта! - {transaction.type} ({transaction.comment})\n"
+                # else:
+                #     transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+                transactions_output += transaction
+                number += 1
+    else:
+        transactions_empty = False
+    return {"transactions_output": transactions_output, "transactions_empty": transactions_empty}
 
 
-# Геттер для формирования истории игр и передачи в окно ПЕРЕРАБОТАТЬ НА ИГРЫ
+# Геттер для формирования истории игр и передачи в окно
 async def plays_getter(dialog_manager: DialogManager, **kwargs):
     tg_id = dialog_manager.dialog_data["tg_id"]
     session = dialog_manager.middleware_data["session"]
-    transaction_db = orm_select_user_history_balance(session, tg_id)
-    transactions_output = ""
-    # если история платежей не пустая
-    # if transaction_db is not None:
-    #      # если история платежей небольшая выведем её всю
-    #     if len(transaction_db) <= 10:
-    #         for number in range(len(transactions)):
-    #             if transactions[number][5] == "0" or transactions[number][5] == None:
-    #                 transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-    #             else:
-    #                 transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
-    #             transactions_output += transaction
-    #     # в ином случае обрежем её до 10 пунктов
-    #     else:
-    #         for number in range(len(transactions) - 10, len(transactions)):
-    #             if transactions[number][5] == "0" or transactions[number][5] == None:
-    #                 transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]}\n"
-    #             else:
-    #                 transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
-    #             transactions_output += transaction
-    return {"transactions_output": transactions_output}
+    plays_db = await orm_select_user_history_play(session, tg_id)
+    plays_output = ""
+    plays_empty = True
+    # если история игр не пустая
+    if len(plays_db) > 0:
+        # если история игр небольшая выведем её всю
+        if len(plays_db) <= 10:
+            number = 1
+            for play in plays_db:
+                # if transaction[number][5] == "0" or transactions[number][5] == None:
+                play_out = f"{number}: {play.created} - {play.num_play} - {play.type}\n"
+                # else:
+                #     transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+                plays_output += play_out
+                number += 1
+        # в ином случае обрежем её до 10 пунктов
+        else:
+            number = len(plays_db) - 9
+            for play in plays_db:
+                # if transactions[number][5] == "0" or transactions[number][5] == None:
+                play_out = f"{number}: {play.created} - {play.num_play} - {play.type}\n"
+                # else:
+                #     transaction = f"{number+1}: {transactions[number][4]} - {transactions[number][3]} RUB - {transactions[number][2]} - <code>{transactions[number][5]}</code>\n"
+                plays_output += play_out
+                number += 1
+    else:
+        plays_empty = False
+    return {"plays_output": plays_output, "plays_empty": plays_empty}
 
 
 # Геттер для передачи данных о пользователе в окно удаления
@@ -646,7 +683,7 @@ history_window = Window(
 history_pay_window = Window(
     Const(text="История платежей\n"),
     Format(text="{transactions_output}"),
-    Button(Const("Вся история"), id="all_history_pay", on_click=out_all_history_pay),
+    Button(Const("Вся история платежей"), id="all_history_pay", on_click=out_all_history_pay, when="transactions_empty"),
     SwitchTo(
         text=Const("🔙 Назад"),
         id="back_history",
@@ -673,7 +710,7 @@ all_history_pay_window = Window(
 history_plays_window = Window(
     Const(text="История игр\n"),
     Format(text="{plays_output}"),
-    Button(Const("Вся история"), id="all_history_plays", on_click=out_all_history_plays),
+    Button(Const("Вся история игр"), id="all_history_plays", on_click=out_all_history_plays, when="plays_empty"),
     SwitchTo(
         text=Const("🔙 Назад"),
         id="back_history",
@@ -730,6 +767,8 @@ working_clients_dialog = Dialog(
     history_window,
     history_pay_window,
     all_history_pay_window,
+    history_plays_window,
+    all_history_plays_window,
     delete_user_window,
     deleting_user_window,
 )
