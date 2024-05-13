@@ -325,8 +325,8 @@ async def deleting_user(
 ):
     tg_id = dialog_manager.dialog_data["tg_id"]
     session: AsyncSession = dialog_manager.middleware_data["session"]
-    # Удаляем клиента в базе ДОБАВИТЬ
-    print("УДАЛЕНИЕ")
+    # Удаляем клиента в базе
+    await orm_delete_user(session, tg_id)
     await dialog_manager.switch_to(state=states.WorkingClients.DELETING)
 
 
