@@ -130,3 +130,6 @@ LEXICON_ROLE_INFO: dict[str: str] = {
 LEXICON_ROLE_INFO_BUTTON: dict[str: str] = {
     "back_profile": "Назад"
 }
+
+
+LEXICON_RETURN_MAIN_MENU: dict[str: str] = {"main": "В главное меню"}
