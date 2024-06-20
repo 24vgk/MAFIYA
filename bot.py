@@ -8,6 +8,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 from apscheduler.jobstores.redis import RedisJobStore
 from apscheduler_di import ContextSchedulerDecorator
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from middlewares.apscheduler_m import SchedulerMiddleware
 
 from config_bd.engine import create_db, session_maker
@@ -21,6 +23,8 @@ from handlers.admin.WorkingClients import working_clients_dialog
 from handlers.admin.SendMessages import send_messages_dialog
 from handlers.admin.ServiceScripts import services_scripts_dialog
 from handlers.admin.GetLogs import get_logs_dialog
+from rodi import Container
+from config_bd.engine import session_maker
 
 # Инициализируем логгер
 from middlewares.db import DataBaseSession
@@ -55,22 +59,30 @@ async def main() -> None:
 
     # Настраиваем кнопку Menu
     await set_main_menu(bot)
+    await create_db()
+    dp.update.middleware(DataBaseSession(session_pool=session_maker))
+    # # Создаем экземпляр контейнера зависимостей
+    # container = Container()
+    # container.register(AsyncSession, to_instance=session_maker())
+    # container.register(Bot, to_instance=bot)
+
     # Сообщения по расписанию
     scheduler = ContextSchedulerDecorator(AsyncIOScheduler(timezone="Europe/Moscow", jobstores=jobstores))
     scheduler.ctx.add_instance(bot, declared_class=Bot)
+    scheduler.ctx.add_instance(session_maker(), declared_class=AsyncSession)
     scheduler.start()
     try:
         scheduler.remove_job('random')
     except:
         pass
-    scheduler.add_job(sheduler_distribution.random, id='random', trigger='cron', hour=00,
-                      minute=1, start_date=datetime.now())
-    await create_db()
+    scheduler.add_job(sheduler_distribution.random, id='random', trigger='interval', seconds=5, start_date=datetime.now())
 
     # Регистриуем роутеры в диспетчере
-    dp.update.middleware(DataBaseSession(session_pool=session_maker))
+    # dp.update.middleware(DataBaseSession(session_pool=session_maker))
     dp.update.middleware.register(SchedulerMiddleware(scheduler))
     dp.include_router(admin_handlers.router)
+    dp.include_router(other_handlers.router)
+    # dp.include_router(admin_handlers.router)
     dp.include_router(main_menu_dialog)
     dp.include_router(game_handlers.router)
     dp.include_router(other_handlers.router)
@@ -78,6 +90,8 @@ async def main() -> None:
     dp.include_router(send_messages_dialog)
     dp.include_router(services_scripts_dialog)
     dp.include_router(get_logs_dialog)
+    dp.include_router(game_handlers.router)
+    # dp.include_router(other_handlers.router)
     dp.include_router(system_handlers.router)
     setup_dialogs(dp)
 

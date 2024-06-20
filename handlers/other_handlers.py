@@ -439,10 +439,3 @@ async def pay_one_month(callback: CallbackQuery, session: AsyncSession):
 async def com_help(message: Message):
     await message.answer(text=str(message.from_user.id))
 
-
-# @router.callback_query(F.data == 'start_reg')
-# async def com_help(callback: CallbackQuery):
-#     print(callback)
-#     print(callback)
-
-
