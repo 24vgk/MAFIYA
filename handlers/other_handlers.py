@@ -406,17 +406,3 @@ async def pay_one_month(callback: CallbackQuery, session: AsyncSession):
 @router.message(Command(commands='my_id'))
 async def com_help(message: Message):
     await message.answer(text=str(message.from_user.id))
-
-
-# @router.callback_query(F.data == 'start_reg')
-# async def com_help(callback: CallbackQuery):
-#     print(callback)
-#     print(callback)
-
-
-# Этот хэндлер удаляет сообщения которые не обрабатываются
-@router.message()
-async def delete_warning_message(message: Message):
-    print(message.chat.id)
-    await message.delete()
-    await message.answer(text='вы зарегистрировали игру')
