@@ -25,4 +25,4 @@ router: Router = Router()
 async def delete_warning_message(message: Message):
     print(message.chat.id)
     await message.delete()
-    await message.answer(text='вы зарегистрировали игру')
+    await message.answer(text='NO COMMANDDs')

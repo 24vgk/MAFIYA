@@ -11,23 +11,23 @@ from lexicon import lexicon_game as lx
 # Импортируем конфиг
 config: Config = load_config()
 
-# Импортируем клавиатуры
-connect_reg_keyboard = generate_all(1, **lx.LEXICON_GAME_CONNECT)
 
-
-async def random(bot: Bot, session: AsyncSession):
+async def reg_game(bot: Bot, session: AsyncSession):
     # Проверяем наличие активированных игр
-    x = await pl.select_play_go(session)
+    active_game = await pl.select_play_active(session)
     # Таймаут регистрации игры
     time = 120
-    if x:
+    if active_game:
         # Изменяем статус игры чтобы не взял в работу снова
-        await pl.update_play_go(session, x.play_id, False)
+        await pl.update_play_active(session, active_game.play_id, False)
         # Получаем данные об игре
-        play_x = await pl.select_play(session, x.play_id)
+        play_x = await pl.select_play(session, active_game.play_id)
         chat_id = play_x.group
         flag = 0
         message_id = 0
+        # Импортируем клавиатуры
+        lexicon_key = {f"connect_game_{active_game.play_id}": "Присоединиться к игре"}
+        connect_reg_keyboard = generate_all(1, **lexicon_key)
         while time:
             text = f"До окончания регистрации осталось {time} секунд\n\nУчастники:\n"
             # Получаем список зарегистрированных игроков
@@ -42,3 +42,14 @@ async def random(bot: Bot, session: AsyncSession):
             time -= 10
             await asyncio.sleep(10)
         await bot.edit_message_text(chat_id=chat_id, message_id=message_id.message_id, text='Время регистрации закончилось')
+        count_user = len(await pl.select_play_users(session, chat_id))
+        if count_user < 4:
+            await bot.edit_message_text(chat_id=chat_id, message_id=message_id.message_id, text='Недостаточно игроков для игры')
+        else:
+            await bot.edit_message_text(chat_id=chat_id, message_id=message_id.message_id, text='Игра начинается')
+            await pl.update_play_go(session, active_game.play_id, True)
+
+
+async def active_game(bot: Bot, session: AsyncSession):
+    # Проверяем наличие активированных игр
+    play_go = await pl.select_play_go(session)

@@ -72,10 +72,13 @@ async def main() -> None:
     scheduler.ctx.add_instance(session_maker(), declared_class=AsyncSession)
     scheduler.start()
     try:
-        scheduler.remove_job('random')
+        scheduler.remove_job('reg_game')
+        # scheduler.remove_job('active_game')
     except:
         pass
-    scheduler.add_job(sheduler_distribution.random, id='random', trigger='interval', seconds=5, start_date=datetime.now())
+    scheduler.add_job(sheduler_distribution.reg_game, id='reg_game', trigger='interval', seconds=5, start_date=datetime.now())
+    # scheduler.add_job(sheduler_distribution.active_game, id='active_game', trigger='interval', seconds=5,
+    #                   start_date=datetime.now())
 
     # Регистриуем роутеры в диспетчере
     # dp.update.middleware(DataBaseSession(session_pool=session_maker))
@@ -84,8 +87,8 @@ async def main() -> None:
     dp.include_router(other_handlers.router)
     # dp.include_router(admin_handlers.router)
     dp.include_router(main_menu_dialog)
-    dp.include_router(game_handlers.router)
-    dp.include_router(other_handlers.router)
+    # dp.include_router(game_handlers.router)
+    # dp.include_router(other_handlers.router)
     dp.include_router(working_clients_dialog)
     dp.include_router(send_messages_dialog)
     dp.include_router(services_scripts_dialog)
