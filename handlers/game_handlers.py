@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from handlers import sheduler_distribution
 from keyboards.inline.keyboard import generate_all
 from lexicon import lexicon_game as lx
-from filters.filters import ChatTypeFilter
+from filters.filters import ChatTypeFilter, CallbackPrefixFilter
 from config_bd import Plays as pl
 from config_bd import Users as us
 from middlewares.apscheduler_m import SchedulerMiddleware
@@ -32,9 +32,10 @@ async def delete_warning_message(message: Message):
 
 
 # Этот хэндлер отвечает за присоединение к игре
-@router.callback_query(F.data == 'connect_game')
+@router.callback_query(CallbackPrefixFilter(prefix='connect_game_'))
 async def com_help(callback: CallbackQuery, session: AsyncSession):
     if callback.message.chat.id == -1001892980253:
+        play_id = callback.data.split('_')[2]
         u = await pl.select_play_user(session, callback.from_user.id, callback.message.chat.id)
         if len(u) != 0:
             await callback.message.answer(text='Вы уже играете')
@@ -42,7 +43,7 @@ async def com_help(callback: CallbackQuery, session: AsyncSession):
             user = await us.orm_select_user(session, str(callback.from_user.id))
             await pl.add_play(
                 session,
-                play_id=11,
+                play_id=play_id,
                 user=callback.from_user.id,
                 group=callback.message.chat.id,
                 user_name=user.user_name,
@@ -70,5 +71,5 @@ async def com_help(callback: CallbackQuery, session: AsyncSession):
                 is_owner=True
             )
             # активируем игру
-            await pl.play_go(session, play_id, True)
+            await pl.play_go(session, play_id, True, False)
             await callback.message.bot.send_message(callback.from_user.id, lx.LEXICON_GAME_START['start_game'])

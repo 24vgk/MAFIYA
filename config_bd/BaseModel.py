@@ -77,6 +77,7 @@ class Plays_Go(Base):
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, unique=True)
     play_id: Mapped[int] = mapped_column()
+    is_active: Mapped[bool] = mapped_column(default=False)
     is_play: Mapped[bool] = mapped_column(default=False)
 
 

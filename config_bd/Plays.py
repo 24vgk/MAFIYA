@@ -39,16 +39,19 @@ async def add_play(
 async def play_go(
         session: AsyncSession,
         play_id: int,
+        is_active: bool,
         is_play: bool):
     """
     Добавлет в базу данных запись игры
     :param session: AsyncSession
     :param play_id: int
+    :param is_active: bool
     :param is_play: bool
     :return: None
     """
     obj = Plays_Go(
         play_id=play_id,
+        is_active=is_active,
         is_play=is_play
     )
     session.add(obj)
@@ -85,6 +88,21 @@ async def select_play_go(session: AsyncSession):
         return None
 
 
+async def select_play_active(session: AsyncSession):
+    """
+    Проверяет активацию игры
+    :param session: AsyncSession
+    :return: Object | None
+    """
+    try:
+        stmt = select(Plays_Go).where(Plays_Go.is_active.is_(True))
+        result = await session.execute(stmt)
+        active_game = result.scalars().one_or_none()
+        return active_game
+    except NoResultFound:
+        return None
+
+
 async def select_play(session: AsyncSession, play_id: int):
     """
     Получаем данные об игре
@@ -99,13 +117,26 @@ async def select_play(session: AsyncSession, play_id: int):
 
 async def update_play_go(session: AsyncSession, play_id: int, is_play: bool):
     """
-    Обновляем статус активации игры
+    Обновляем статус запуска игры
     :param session: AsyncSession
     :param play_id: int
     :param is_play: bool
     :return: None
     """
     query = update(Plays_Go).where(Plays_Go.play_id == play_id).values(is_play=is_play)
+    await session.execute(query)
+    await session.commit()
+
+
+async def update_play_active(session: AsyncSession, play_id: int, is_active: bool):
+    """
+    Обновляем статус активации игры
+    :param session: AsyncSession
+    :param play_id: int
+    :param is_active: bool
+    :return: None
+    """
+    query = update(Plays_Go).where(Plays_Go.play_id == play_id).values(is_active=is_active)
     await session.execute(query)
     await session.commit()
 
